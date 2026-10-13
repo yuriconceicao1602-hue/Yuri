@@ -1,0 +1,124 @@
+<pre><code class="language-markdown">local Players = game:GetService(&quot;Players&quot;)
+local Workspace = game:GetService(&quot;Workspace&quot;)
+local RunService = game:GetService(&quot;RunService&quot;)
+local UserInputService = game:GetService(&quot;UserInputService&quot;)
+
+local player = Players.LocalPlayer
+local pulling = true  -- Starts enabled
+
+local connection
+
+-- Rarity list
+local rarities = {
+    &quot;Common&quot;,
+    &quot;Uncommon&quot;,
+    &quot;Rare&quot;,
+    &quot;Epic&quot;,
+    &quot;Legendary&quot;
+}
+
+-- Enabled rarities
+local enabled = {
+    Common = true,
+    Uncommon = true,
+    Rare = true,
+    Epic = true,
+    Legendary = true
+}
+
+-- Function to pull items
+local function pullItems()
+    if not player.Character or not player.Character:FindFirstChild(&quot;HumanoidRootPart&quot;) then
+        return
+    end
+    
+    local hrp = player.Character.HumanoidRootPart
+    local targetPos = hrp.Position + Vector3.new(0, 5, 0)
+    
+    for _, rarity in ipairs(rarities) do
+        if enabled[rarity] then
+            local folder = Workspace.Map.Functional.SpawnedItems:FindFirstChild(rarity)
+            if folder then
+                for _, item in ipairs(folder:GetChildren()) do
+                    local root = item:FindFirstChild(&quot;Root&quot;)
+                    if root and root:IsA(&quot;BasePart&quot;) then
+                        root.CFrame = CFrame.new(targetPos)
+                        root.Velocity = Vector3.new(0, 0, 0)
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Start automatic pulling immediately
+local function startAutoPull()
+    if connection then return end
+    connection = RunService.RenderStepped:Connect(pullItems)
+end
+
+local function stopAutoPull()
+    if connection then
+        connection:Disconnect()
+        connection = nil
+    end
+end
+
+startAutoPull()  -- Activate automatically on script execution
+
+-- GUI creation (unchanged until ToggleBtn section)
+local ScreenGui = Instance.new(&quot;ScreenGui&quot;)
+local Frame = Instance.new(&quot;Frame&quot;)
+local TopBar = Instance.new(&quot;Frame&quot;)
+local Title = Instance.new(&quot;TextLabel&quot;)
+local MinimizeBtn = Instance.new(&quot;TextButton&quot;)
+local CloseBtn = Instance.new(&quot;TextButton&quot;)
+local ToggleBtn = Instance.new(&quot;TextButton&quot;)
+-- ... (all previous GUI setup code remains identical until ToggleBtn setup)
+
+ToggleBtn.Parent = Frame
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)  -- Green for ON
+ToggleBtn.Position = UDim2.new(0.1, 0, 0, 45)
+ToggleBtn.Size = UDim2.new(0.8, 0, 0, 40)
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.Text = &quot;AUTO PULL: ON&quot;
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.TextSize = 18
+
+local toggleCorner = Instance.new(&quot;UICorner&quot;)
+toggleCorner.Parent = ToggleBtn
+toggleCorner.CornerRadius = UDim.new(0, 8)
+
+-- Toggle button now controls auto-pull on/off
+ToggleBtn.MouseButton1Click:Connect(function()
+    pulling = not pulling
+    if pulling then
+        ToggleBtn.Text = &quot;AUTO PULL: ON&quot;
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+        startAutoPull()
+    else
+        ToggleBtn.Text = &quot;AUTO PULL: OFF&quot;
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+        stopAutoPull()
+    end
+end)
+
+-- ... (rest of GUI code: minimized icon, rarity checkboxes, dragging, minimize/close, hotkey, etc. remains unchanged)
+
+-- Ensure pulling stops when GUI is closed
+CloseBtn.MouseButton1Click:Connect(function()
+    stopAutoPull()
+    ScreenGui:Destroy()
+end)
+
+-- Optional: stop pulling when player dies/resets (recommended)
+player.CharacterAdded:Connect(function()
+    -- Pulling will resume automatically if still enabled
+    if pulling then
+        startAutoPull()
+    end
+end)
+
+player.CharacterRemoving:Connect(function()
+    stopAutoPull()
+end)</code></pre>
